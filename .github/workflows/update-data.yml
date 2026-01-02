@@ -5,11 +5,16 @@ on:
     - cron: '0 6 * * *'  # Daily at 6am UTC
   workflow_dispatch:  # Manual trigger from GitHub UI
 
+permissions:
+  contents: write
+
 jobs:
   update:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
       
       - name: Set up Python
         uses: actions/setup-python@v5
