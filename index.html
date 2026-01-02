@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComfyUI Custom Node Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(148, 163, 184, 0.1);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-color: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --danger-color: #f43f5e;
+            --success-color: #10b981;
+            --glass-blur: blur(12px);
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08), transparent 25%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            text-align: center;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            letter-spacing: -1px;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 0.75rem 1.5rem;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            backdrop-filter: var(--glass-blur);
+        }
+
+        .stat-value {
+            color: var(--accent-color);
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 1rem;
+            border: 1px solid var(--card-border);
+            backdrop-filter: var(--glass-blur);
+            align-items: center;
+        }
+
+        .search-wrapper {
+            flex: 1;
+            position: relative;
+            min-width: 300px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--card-border);
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+
+        .filter-container {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding-left: 1rem;
+            border-left: 1px solid var(--card-border);
+        }
+
+        .range-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            min-width: 180px;
+        }
+
+        .range-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .range-val {
+            color: var(--accent-color);
+            font-family: monospace;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: rgba(148, 163, 184, 0.2);
+            border-radius: 2px;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+        }
+
+        /* TABLE STYLES */
+        .table-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 1rem;
+            overflow: hidden;
+            backdrop-filter: var(--glass-blur);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            table-layout: fixed;
+            /* Respect column widths */
+        }
+
+        thead {
+            background: rgba(15, 23, 42, 0.8);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        th:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        th.sorted-asc::after {
+            content: ' ▲';
+            color: var(--accent-color);
+        }
+
+        th.sorted-desc::after {
+            content: ' ▼';
+            color: var(--accent-color);
+        }
+
+        tbody tr {
+            border-bottom: 1px solid var(--card-border);
+            transition: var(--transition);
+            contain: content;
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        tbody tr:hover {
+            background: rgba(56, 189, 248, 0.05);
+            /* very light blue accent */
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            vertical-align: middle;
+        }
+
+        /* Specific column styles - Widths apply to Header */
+        th.col-name {
+            width: 20%;
+        }
+
+        th.col-desc {
+            width: 30%;
+        }
+
+        th.col-stars {
+            width: 8%;
+            text-align: center;
+        }
+
+        th.col-spm {
+            width: 10%;
+            text-align: center;
+        }
+
+        th.col-created {
+            width: 12%;
+        }
+
+        th.col-updated {
+            width: 12%;
+        }
+
+        /* Simplified body styles */
+        td {
+            padding: 0.6rem 0.8rem;
+            vertical-align: top;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        td b {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        td small {
+            opacity: 0.7;
+        }
+
+        td.stars {
+            color: #fbbf24;
+            font-weight: 600;
+            font-family: monospace;
+            text-align: center;
+        }
+
+        td.spm {
+            color: var(--accent-color);
+            font-family: monospace;
+            text-align: center;
+        }
+
+        td a {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-size: 1.2rem;
+        }
+
+        td a:hover {
+            color: var(--text-primary);
+        }
+
+        .tag-pill {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--text-secondary);
+            margin-left: 0.5rem;
+            font-weight: normal;
+        }
+
+        .author-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .btn-sm {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.4rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-color);
+            transition: var(--transition);
+        }
+
+        .btn-sm:hover {
+            background: var(--accent-color);
+            color: #0f172a;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            th,
+            td {
+                padding: 0.75rem;
+            }
+
+            .col-desc {
+                display: none;
+            }
+
+            /* Hide description on mobile */
+            .col-updated {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>ComfyUI Custom Node Explorer</h1>
+            <div class="stats-bar" id="stats-bar">
+                <div class="stat-item">Total Nodes in the table: <span class="stat-value" id="count-nodes">...</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="controls">
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="search-input" placeholder="Search by name, description, or author...">
+            </div>
+
+            <div class="filter-container">
+                <div class="range-group">
+                    <div class="range-row">
+                        <span>Min Stars</span>
+                        <span id="min-stars-val" class="range-val">0</span>
+                    </div>
+                    <input type="range" id="min-stars-input" min="0" max="1000" value="0">
+                </div>
+                <div class="range-group">
+                    <div class="range-row">
+                        <span>Min Stars/Mo</span>
+                        <span id="min-spm-val" class="range-val">0</span>
+                    </div>
+                    <input type="range" id="min-spm-input" min="0" max="100" step="0.1" value="0">
+                </div>
+                <div class="range-group">
+                    <div class="range-row">
+                        <span>Max Months Since Update</span>
+                        <span id="max-months-val" class="range-val">12</span>
+                    </div>
+                    <input type="range" id="max-months-input" min="0" max="120" value="120">
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="nodes-table">
+                <thead>
+                    <tr>
+                        <th data-sort="name" class="col-name text-left">Node Name</th>
+                        <th data-sort="desc" class="col-desc">Description</th>
+                        <th data-sort="stars" class="col-stars">Stars</th>
+                        <th data-sort="spm" class="col-spm">Stars/Mo</th>
+                        <th data-sort="created" class="col-created">Created</th>
+                        <th data-sort="updated" class="col-updated">Last Update</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <tr>
+                        <td colspan="6">
+                            <div class="loading">Loading ecosystem...</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="nodes.js"></script>
+    <script>
+        // Old URLs removed, using local nodes.js which is generated by fetch_data_graphql.py
+
+        let allNodes = [];
+        let sortedIndices = {};
+
+        // State
+        let currentSort = { field: 'stars', direction: 'desc' };
+
+        async function init() {
+            try {
+                // 1. Load Data directly from generated JS file
+                if (window.COMFY_DATA) {
+                    allNodes = window.COMFY_DATA.nodes;
+                    sortedIndices = window.COMFY_DATA.sortedIndices;
+                } else {
+                    throw new Error("window.COMFY_DATA not found. Ensure nodes.js is loaded.");
+                }
+
+                // Calculate Max Stars/Month limits for sliders
+                const maxStars = Math.max(...allNodes.map(n => n.stars));
+                const maxSpm = Math.max(...allNodes.map(n => n.spm));
+
+                // Determine sensible max for months since update (ignoring 999 default)
+                const realUpdates = allNodes.filter(n => n.monthsSinceUpdate !== 999).map(n => n.monthsSinceUpdate);
+                const maxMonths = realUpdates.length ? Math.ceil(Math.max(...realUpdates)) : 24;
+
+                minStarsInput.max = maxStars;
+                minSpmInput.max = Math.ceil(maxSpm);
+
+                maxMonthsInput.max = maxMonths;
+                maxMonthsInput.value = maxMonths; // Default to showing everything
+
+                updateSliderDisplay();
+
+                // Initial render
+                updateStats(getFilteredNodes());
+                renderTable();
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('table-body').innerHTML = `
+                    <tr><td colspan="5" class="loading" style="color: var(--danger-color)">
+                        Failed to load data.<br>${err.message}
+                    </td></tr>
+                `;
+            }
+        }
+
+        const searchInput = document.getElementById('search-input');
+        const minStarsInput = document.getElementById('min-stars-input');
+        const minStarsVal = document.getElementById('min-stars-val');
+        const minSpmInput = document.getElementById('min-spm-input');
+        const minSpmVal = document.getElementById('min-spm-val');
+        const maxMonthsInput = document.getElementById('max-months-input');
+        const maxMonthsVal = document.getElementById('max-months-val');
+
+        const tableHeader = document.querySelector('thead');
+        const tableBody = document.getElementById('table-body');
+
+        // Debounce Utility to keep UI responsive
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
+
+        // Debounce: 300ms means table only updates when slider STOPS moving
+        // Stats update instantly (no debounce), table waits
+        const debouncedRender = debounce(renderTable, 300);
+
+        // Event Listeners
+        searchInput.addEventListener('input', () => {
+            updateStats(getFilteredNodes());
+            debouncedRender();
+        });
+
+        minStarsInput.addEventListener('input', () => {
+            updateSliderDisplay();
+            updateStats(getFilteredNodes());
+            debouncedRender();
+        });
+
+        minSpmInput.addEventListener('input', () => {
+            updateSliderDisplay();
+            updateStats(getFilteredNodes());
+            debouncedRender();
+        });
+
+        maxMonthsInput.addEventListener('input', () => {
+            updateSliderDisplay();
+            updateStats(getFilteredNodes());
+            debouncedRender();
+        });
+
+        function updateSliderDisplay() {
+            minStarsVal.textContent = formatNumber(minStarsInput.value);
+            minSpmVal.textContent = minSpmInput.value;
+            maxMonthsVal.textContent = maxMonthsInput.value + " mo";
+        }
+
+        tableHeader.addEventListener('click', (e) => {
+            const th = e.target.closest('th');
+            if (!th || !th.dataset.sort) return;
+
+            const field = th.dataset.sort;
+            if (currentSort.field === field) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.field = field;
+                currentSort.direction = 'desc'; // Default to desc for everything initially
+            }
+
+            // Update UI classes
+            document.querySelectorAll('th').forEach(h => h.classList.remove('sorted-asc', 'sorted-desc'));
+            th.classList.add(currentSort.direction === 'asc' ? 'sorted-asc' : 'sorted-desc');
+
+            renderTable(); // Sort click doesn't need debounce usually, click is rare
+        });
+
+        // Initialize sort icon on default column
+        document.querySelector('th[data-sort="stars"]').classList.add('sorted-desc');
+
+        function getFilteredNodes() {
+            const query = searchInput.value.toLowerCase();
+            const minS = parseInt(minStarsInput.value);
+            const minSpm = parseFloat(minSpmInput.value);
+            const maxMo = parseInt(maxMonthsInput.value);
+            const maxMoLimit = parseInt(maxMonthsInput.max);
+
+            return allNodes.filter(node => {
+                const matchesSearch = node.searchStr.includes(query);
+                const matchesStars = node.stars >= minS;
+                const matchesSpm = node.spm >= minSpm;
+
+                // Logic: If slider is at max, include everything (even unknown dates). 
+                // Otherwise strict check.
+                let matchesRecency = false;
+                if (maxMo >= maxMoLimit) {
+                    matchesRecency = true;
+                } else {
+                    matchesRecency = node.monthsSinceUpdate <= maxMo;
+                }
+
+                return matchesSearch && matchesStars && matchesSpm && matchesRecency;
+            });
+        }
+
+        function renderTable() {
+            // Get the pre-sorted index array for current sort
+            const sortKey = `${currentSort.field}_${currentSort.direction}`;
+            const orderedIndices = sortedIndices[sortKey] || sortedIndices['stars_desc'];
+
+            // Get filter values once
+            const query = searchInput.value.toLowerCase();
+            const minS = parseInt(minStarsInput.value);
+            const minSpm = parseFloat(minSpmInput.value);
+            const maxMo = parseInt(maxMonthsInput.value);
+            const maxMoLimit = parseInt(maxMonthsInput.max);
+
+            // Build HTML by iterating pre-sorted indices and filtering inline
+            // Use pre-rendered HTML from data
+            const htmlParts = [];
+
+            for (const idx of orderedIndices) {
+                const node = allNodes[idx];
+
+                // Apply filters
+                if (!node.searchStr.includes(query)) continue;
+                if (node.stars < minS) continue;
+                if (node.spm < minSpm) continue;
+                if (maxMo < maxMoLimit && node.monthsSinceUpdate > maxMo) continue;
+
+                // Use pre-rendered HTML
+                htmlParts.push(node.html);
+            }
+
+            // Hide table during DOM update to avoid layout thrashing
+            tableBody.style.display = 'none';
+
+            if (htmlParts.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-secondary)">No nodes found.</td></tr>';
+            } else {
+                tableBody.innerHTML = htmlParts.join('');
+            }
+
+            tableBody.style.display = '';
+        }
+
+        function updateStats(nodes = allNodes) {
+            const totalNodes = nodes.length;
+            const countEl = document.getElementById('count-nodes');
+            if (countEl) countEl.textContent = formatNumber(totalNodes);
+        }
+
+        // Utils
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('en-US').format(num);
+        }
+
+        function formatDate(ts) {
+            if (!ts || ts === 0) return '-';
+            const date = new Date(ts);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays <= 1) return 'Today';
+            if (diffDays <= 7) return `${diffDays} days ago`;
+            if (diffDays <= 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+            if (diffDays <= 365) return `${Math.floor(diffDays / 30)} months ago`;
+
+            return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+
+</html>

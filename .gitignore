@@ -1,0 +1,9 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Local cache
+custom-node-list.json
+
+# Environment
+.env
