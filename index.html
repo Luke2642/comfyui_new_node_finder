@@ -64,6 +64,40 @@
             padding: 2rem;
         }
 
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .filter-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .table-container {
+                overflow-x: auto;
+            }
+
+            table {
+                font-size: 0.8rem;
+                min-width: 600px;
+            }
+
+            td,
+            th {
+                padding: 0.4rem 0.5rem;
+            }
+        }
+
         header {
             margin-bottom: 3rem;
             text-align: center;
@@ -443,9 +477,9 @@
                 <div class="range-group">
                     <div class="range-row">
                         <span>Min Stars/Mo</span>
-                        <span id="min-spm-val" class="range-val">0</span>
+                        <span id="min-spm-val" class="range-val">50</span>
                     </div>
-                    <input type="range" id="min-spm-input" min="0" max="100" step="0.1" value="0">
+                    <input type="range" id="min-spm-input" min="0" max="100" step="1" value="50">
                 </div>
                 <div class="range-group">
                     <div class="range-row">
@@ -487,8 +521,8 @@
         let allNodes = [];
         let sortedIndices = {};
 
-        // State
-        let currentSort = { field: 'stars', direction: 'desc' };
+        // State - default sort by created date (newest first)
+        let currentSort = { field: 'created', direction: 'desc' };
 
         async function init() {
             try {
@@ -514,7 +548,14 @@
                 maxMonthsInput.max = maxMonths;
                 maxMonthsInput.value = maxMonths; // Default to showing everything
 
+                // Set default SPM filter to 50
+                minSpmInput.value = 50;
+
                 updateSliderDisplay();
+
+                // Update sort indicator in header
+                document.querySelectorAll('th').forEach(h => h.classList.remove('sorted-asc', 'sorted-desc'));
+                document.querySelector('th[data-sort="created"]').classList.add('sorted-desc');
 
                 // Initial render
                 updateStats(getFilteredNodes());
