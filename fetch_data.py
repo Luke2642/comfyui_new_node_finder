@@ -262,8 +262,8 @@ def main():
         
         essential_tag = ' <b style="color:#38bdf8">★</b>' if clean_node['id'] == 'manager' else ''
         
-        # Minimal HTML - title is the link, no separate link column
-        clean_node['html'] = f'''<tr><td><a href="{ref}" target="_blank"><b>{title_escaped}</b></a>{essential_tag}<br><small>{author_escaped}</small></td><td title="{desc_escaped}">{desc_escaped[:150]}{'...' if len(desc_escaped) > 150 else ''}</td><td class="stars">{stars_display}</td><td class="spm">{spm_display}</td><td>{created_display}</td><td>{updated_display}</td></tr>'''
+        # Minimal HTML - title, author, and description combined in one cell
+        clean_node['html'] = f'''<tr><td><a href="{ref}" target="_blank"><b>{title_escaped}</b></a>{essential_tag} <small class="author-text">by {author_escaped}</small><br><small>{desc_escaped}</small></td><td class="stars">{stars_display}</td><td class="spm">{spm_display}</td><td>{created_display}</td><td>{updated_display}</td></tr>'''
         
         final_nodes.append(clean_node)
 

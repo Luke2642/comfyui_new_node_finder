@@ -195,8 +195,12 @@
         .range-group {
             display: flex;
             flex-direction: column;
-            gap: 0.2rem;
+            gap: 0.5rem;
             min-width: 180px;
+            padding: 0.75rem 1rem;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 0.5rem;
+            border: 1px solid var(--card-border);
         }
 
         .range-row {
@@ -295,29 +299,25 @@
 
         /* Specific column styles - Widths apply to Header */
         th.col-name {
-            width: 20%;
-        }
-
-        th.col-desc {
-            width: 30%;
+            width: auto;
         }
 
         th.col-stars {
-            width: 8%;
+            width: 70px;
             text-align: center;
         }
 
         th.col-spm {
-            width: 10%;
+            width: 80px;
             text-align: center;
         }
 
         th.col-created {
-            width: 12%;
+            width: 100px;
         }
 
         th.col-updated {
-            width: 12%;
+            width: 100px;
         }
 
         /* Simplified body styles */
@@ -455,8 +455,8 @@
         <header>
             <h1>ComfyUI Custom Node Explorer</h1>
             <div class="stats-bar" id="stats-bar">
-                <div class="stat-item">Total Nodes in the table: <span class="stat-value" id="count-nodes">...</span>
-                </div>
+                <div class="stat-item">Total Nodes: <span class="stat-value" id="count-total">...</span></div>
+                <div class="stat-item">Nodes Visible: <span class="stat-value" id="count-nodes">...</span></div>
             </div>
         </header>
 
@@ -476,7 +476,7 @@
                 </div>
                 <div class="range-group">
                     <div class="range-row">
-                        <span>Min Stars/Mo</span>
+                        <span>Min Stars/Month</span>
                         <span id="min-spm-val" class="range-val">50</span>
                     </div>
                     <input type="range" id="min-spm-input" min="0" max="100" step="1" value="50">
@@ -495,17 +495,16 @@
             <table id="nodes-table">
                 <thead>
                     <tr>
-                        <th data-sort="name" class="col-name text-left">Node Name</th>
-                        <th data-sort="desc" class="col-desc">Description</th>
+                        <th data-sort="name" class="col-name text-left">Node</th>
                         <th data-sort="stars" class="col-stars">Stars</th>
                         <th data-sort="spm" class="col-spm">Stars/Mo</th>
                         <th data-sort="created" class="col-created">Created</th>
-                        <th data-sort="updated" class="col-updated">Last Update</th>
+                        <th data-sort="updated" class="col-updated">Updated</th>
                     </tr>
                 </thead>
                 <tbody id="table-body">
                     <tr>
-                        <td colspan="6">
+                        <td colspan="5">
                             <div class="loading">Loading ecosystem...</div>
                         </td>
                     </tr>
@@ -558,6 +557,7 @@
                 document.querySelector('th[data-sort="created"]').classList.add('sorted-desc');
 
                 // Initial render
+                document.getElementById('count-total').textContent = formatNumber(allNodes.length);
                 updateStats(getFilteredNodes());
                 renderTable();
 
@@ -706,7 +706,7 @@
             tableBody.style.display = 'none';
 
             if (htmlParts.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-secondary)">No nodes found.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--text-secondary)">No nodes found.</td></tr>';
             } else {
                 tableBody.innerHTML = htmlParts.join('');
             }

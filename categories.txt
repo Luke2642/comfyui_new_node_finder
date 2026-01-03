@@ -1,0 +1,25 @@
+[workflow_management]Tools handling installation, dependency management, version control, system path configuration, and security measures like script execution limits.
+[sampling_control]Advanced noise manipulation including custom KSamplers, sigma scheduling, restart sampling, and guidance control mechanisms like dynamic thresholding.
+[image_restoration]AI-based enhancement tools for upscaling, artifact removal, deblurring, and detail injection using architectures like ESRGAN and SwinIR.
+[face_manipulation]Systems for face swapping, identity transfer, expression editing, and facial segmentation using libraries such as InsightFace and ReActor.
+[structural_guidance]Conditioning methods using ControlNet, T2I adapters, and pose estimation to constrain generation based on structure, depth, or edges.
+[style_transfer]Techniques for transferring visual concepts including IP-Adapter implementations, CLIP style models, reference injection, and LoRA stacking.
+[video_generation]Generative video pipelines for text-to-video and image-to-video, utilizing motion modules, trajectory control, and models like AnimateDiff or Sora.
+[video_processing]Post-processing utilities for frame interpolation, loop creation, deflickering, temporal smoothing, and FFmpeg-based format conversion.
+[audio_processing]Modules for text-to-speech synthesis, music generation, audio reactivity, voice cloning, and stem separation.
+[llm_integration]Integration of Large Language Models via local hosts or cloud APIs to facilitate reasoning, RAG, and automated workflow parameter control.
+[prompt_engineering]Utilities for dynamic text generation, wildcard string manipulation, translation services, and advanced CLIP text encoding.
+[visual_analysis]Visual Language Models and interrogators for captioning, OCR, and extracting structured metadata or descriptions from image inputs.
+[3d_geometry]Tools for generating D assets from D inputs, estimating depth and normal maps, and processing D mesh or Gaussian Splatting data.
+[image_segmentation]Automated masking workflows using semantic models like Segment Anything (SAM) and YOLO, including background removal and morphological operations.
+[color_lighting]Image adjustment nodes for relighting, color grading via LUTs, exposure control, and frequency separation for texture editing.
+[model_management]Utilities for loading diverse model formats, merging checkpoints, training LoRAs, and analyzing model layer metadata.
+[logic_data]Implementation of mathematical operators, boolean logic gates, type conversion, and list/batch manipulation for complex control flows.
+[user_interface]Enhancements to the visual workspace including custom widgets, image previewers, dashboards, and graph organization tools.
+[cloud_api]Connectors for external inference APIs, cloud storage services like S3, and integration with social media or web platforms.
+[software_interop]Bridges enabling real-time data exchange with external applications such as Photoshop, Blender, OBS, and Spout/Syphon protocols.
+[performance_optimization]Accelerators involving TensorRT, compilation, caching strategies, and memory management to improve inference speed and resource usage.
+[hardware_support]Specialized implementations for specific hardware architectures including Apple Silicon (MPS), AMD (ROCm), Intel NPUs, and multi-GPU setups.
+[file_io]Advanced input/output handlers for various media formats, managing file metadata (Exif/PngInfo), and directory operations.
+[inpainting]Algorithms for masked generative fill, outpainting, seam carving, and canvas expansion using models like LaMa or Fooocus.
+[experimental_research]Implementations of bleeding-edge model architectures, academic research papers, and analytical benchmarking tools.
