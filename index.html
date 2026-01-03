@@ -106,11 +106,6 @@
                 font-size: 0.8rem;
             }
 
-            td,
-            th {
-                padding: 0.3rem 0.4rem;
-            }
-
             .stats-bar {
                 gap: 0.5rem;
             }
@@ -118,6 +113,64 @@
             .stat-item {
                 padding: 0.5rem 0.75rem;
                 font-size: 0.8rem;
+            }
+
+            /* Hide header row on mobile */
+            thead {
+                display: none;
+            }
+
+            /* Card view for table rows */
+            tbody tr {
+                display: flex;
+                flex-wrap: wrap;
+                padding: 0.75rem;
+                margin-bottom: 0.5rem;
+                background: rgba(15, 23, 42, 0.4);
+                border-radius: 0.5rem;
+                border: 1px solid var(--card-border);
+            }
+
+            /* First column (Node) takes full width */
+            tbody tr td:first-child {
+                flex: 0 0 100%;
+                width: 100%;
+                padding: 0 0 0.5rem 0;
+                margin-bottom: 0.5rem;
+                border-bottom: 1px solid var(--card-border);
+            }
+
+            /* Stats columns share the row below */
+            tbody tr td:not(:first-child) {
+                flex: 1;
+                text-align: center;
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+            }
+
+            /* Add labels above stats on mobile */
+            tbody tr td.stars::before {
+                content: '★ ';
+                color: #fbbf24;
+            }
+
+            tbody tr td.spm::before {
+                content: '★/Month: ';
+                color: var(--text-secondary);
+                font-size: 0.65rem;
+            }
+
+            /* Date columns styling */
+            tbody tr td:nth-child(4)::before {
+                content: 'Created: ';
+                color: var(--text-secondary);
+                font-size: 0.65rem;
+            }
+
+            tbody tr td:nth-child(5)::before {
+                content: 'Updated: ';
+                color: var(--text-secondary);
+                font-size: 0.65rem;
             }
         }
 
