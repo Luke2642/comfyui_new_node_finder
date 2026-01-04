@@ -49,8 +49,8 @@ The `generate_summaries.py` script is designed to:
 ---
 
 ## 🖥️ Live Demo
-
-Simply open `index.html` in your browser to explore the node ecosystem.
+[Check it out here](https://luke2642.github.io/comfyui_new_node_finder/)
+Simply open the link in your browser to explore the node ecosystem.
 
 ## 🚀 Getting Started
 
