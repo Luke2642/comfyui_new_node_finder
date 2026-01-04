@@ -21,6 +21,9 @@ jobs:
         with:
           python-version: '3.11'
       
+      - name: Fetch Registry Data
+        run: python fetch_registry.py
+
       - name: Fetch data
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
