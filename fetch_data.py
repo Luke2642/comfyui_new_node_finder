@@ -77,7 +77,24 @@ def fetch_details_graphql(repo_tuples, token):
         return None
 
 def main():
-    print("Downloading node list...")
+    # Load existing nodes.json if it exists (preserves Registry-added nodes)
+    existing_nodes = []
+    existing_repos = set()
+    if os.path.exists(OUTPUT_JSON_FILE):
+        print("Loading existing nodes.json...")
+        with open(OUTPUT_JSON_FILE, 'r') as f:
+            existing_data = json.load(f)
+            existing_nodes = existing_data.get('nodes', [])
+            print(f"Found {len(existing_nodes)} existing nodes")
+            # Build set of existing repo URLs
+            for node in existing_nodes:
+                ref = node.get('reference', '')
+                parts = get_repo_path(ref)
+                if parts:
+                    existing_repos.add(f"{parts[0]}/{parts[1]}".lower())
+    
+    # Download ComfyUI-Manager node list
+    print("Downloading node list from ComfyUI-Manager...")
     try:
         req = urllib.request.Request(NODES_URL, headers={'User-Agent': 'ComfyNodeBrowser'})
         with urllib.request.urlopen(req) as response:
@@ -95,35 +112,56 @@ def main():
             print("No data available.")
             return
 
-    nodes = raw_data.get('custom_nodes', [])
-    print(f"Processing {len(nodes)} nodes...")
-
-    # Prepare batching
-    # We need to map each node to its repo info
-    # Some nodes share repos, but for simplicity we can just query for each node 
-    # and cache by repo-string to avoid dupes in the query batch?
-    # Better: Identify unique repos first.
+    manager_nodes = raw_data.get('custom_nodes', [])
+    print(f"ComfyUI-Manager has {len(manager_nodes)} nodes")
     
-    unique_repos = {} # "owner/name": { (owner, name) }
-    repo_to_nodes = {} # "owner/name": [node_indices...]
+    # Merge: Start with existing nodes, add new ones from Manager
+    nodes_by_repo = {}  # repo_key -> node dict
     
-    for i, node in enumerate(nodes):
+    # First, index existing nodes by repo
+    for node in existing_nodes:
         ref = node.get('reference', '')
         parts = get_repo_path(ref)
         if parts:
-            owner, name = parts
-            full_name = f"{owner}/{name}"
-            unique_repos[full_name] = (owner, name)
-            if full_name not in repo_to_nodes:
-                repo_to_nodes[full_name] = []
-            repo_to_nodes[full_name].append(i)
+            repo_key = f"{parts[0]}/{parts[1]}".lower()
+            nodes_by_repo[repo_key] = node
+    
+    # Add new nodes from Manager (if not already present)
+    new_from_manager = 0
+    for node in manager_nodes:
+        ref = node.get('reference', '')
+        parts = get_repo_path(ref)
+        if parts:
+            repo_key = f"{parts[0]}/{parts[1]}".lower()
+            if repo_key not in nodes_by_repo:
+                # New node - add it with Manager data
+                nodes_by_repo[repo_key] = {
+                    'author': node.get('author', 'Unknown'),
+                    'title': node.get('title', 'Unknown'),
+                    'reference': node.get('reference', ''),
+                    'description': node.get('description', ''),
+                    'id': node.get('id', ''),
+                    'downloads': 0,
+                    'dpm': 0,
+                }
+                new_from_manager += 1
+    
+    print(f"New nodes from Manager: {new_from_manager}")
+    print(f"Total unique repos: {len(nodes_by_repo)}")
+    
+    # Build unique repos list for GitHub API
+    unique_repos = {}  # "owner/name": (owner, name)
+    for repo_key in nodes_by_repo.keys():
+        parts = repo_key.split('/')
+        if len(parts) == 2:
+            unique_repos[repo_key] = (parts[0], parts[1])
             
     sorted_repos = sorted(unique_repos.keys())
     total_repos = len(sorted_repos)
-    print(f"Found {total_repos} unique GitHub repositories.")
+    print(f"Fetching GitHub data for {total_repos} repositories...")
     
     batch_size = 100    
-    repo_data_map = {} # "owner/name" -> {stars, pushed_at, created_at}
+    repo_data_map = {}  # "owner/name" -> {stars, pushed_at, created_at}
     
     # Process batches
     for i in range(0, total_repos, batch_size):
@@ -131,9 +169,8 @@ def main():
         print(f"Fetching batch {i//batch_size + 1}/{math.ceil(total_repos/batch_size)} ({len(batch)} repos)...")
         
         # Prepare list for query gen: [(idx, owner, name), ...]
-        # We use simple index 0..N for the alias in this batch
         query_input = []
-        batch_map = {} # alias_idx -> full_name
+        batch_map = {}  # alias_idx -> full_name
         
         for b_idx, full_name in enumerate(batch):
             owner, name = unique_repos[full_name]
@@ -154,14 +191,11 @@ def main():
                         'createdAt': repo_info['createdAt']
                     }
                 else:
-                    # Repo might be missing or private or renamed?
-                    # GraphQL returns null for missing repos usually (or errors)
                     repo_data_map[full_name] = None
         else:
             print("Batch failed or returned no data.")
             if result and 'errors' in result:
                  print("Errors:", result['errors'][0]['message'])
-            # Sleep a bit if error?
             time.sleep(1)
 
 
@@ -171,48 +205,71 @@ def main():
     
     now = datetime.now()
     
-    for i, node in enumerate(nodes):
-        # Base fields we want to keep
+    # Move helper functions outside the loop
+    def escape_html(text):
+        if not text:
+            return ''
+        return (text
+            .replace('&', '&amp;')
+            .replace('<', '&lt;')
+            .replace('>', '&gt;')
+            .replace('"', '&quot;')
+            .replace("'", '&#039;'))
+    
+    def format_date(ts):
+        if not ts or ts == 0:
+            return '-'
+        date = datetime.fromtimestamp(ts / 1000)
+        diff_days = (now - date).days
+        if diff_days <= 1:
+            return 'Today'
+        if diff_days <= 7:
+            return f'{diff_days} days ago'
+        if diff_days <= 30:
+            return f'{diff_days // 7} weeks ago'
+        if diff_days <= 365:
+            return f'{diff_days // 30} months ago'
+        return date.strftime('%b %d, %Y')
+    
+    for repo_key, node in nodes_by_repo.items():
+        # Preserve existing fields or set defaults
         clean_node = {
             'author': node.get('author', 'Unknown'),
             'title': node.get('title', 'Unknown'),
             'reference': node.get('reference', ''),
             'description': node.get('description', ''),
-            'id': node.get('id', '')
+            'id': node.get('id', ''),
+            'downloads': node.get('downloads', 0),  # Preserve from Registry
+            'dpm': node.get('dpm', 0),  # Preserve from Registry
         }
         
-        # Merge extra data
-        ref = node.get('reference', '')
-        parts = get_repo_path(ref)
-        
+        # Get fresh GitHub data
         stars = 0
         spm = 0
         lastUpdateTs = 0
         createdAtTs = 0
-        monthsSinceUpdate = 999
+        monthsSinceUpdate = 18  # Default to max cap
         
-        if parts:
-            full_name = f"{parts[0]}/{parts[1]}"
-            r_data = repo_data_map.get(full_name)
+        r_data = repo_data_map.get(repo_key)
+        
+        if r_data:
+            stars = r_data['stars']
             
-            if r_data:
-                stars = r_data['stars']
+            # timestamps
+            if r_data['pushedAt']:
+                dt_p = datetime.strptime(r_data['pushedAt'].replace('Z', '+0000'), "%Y-%m-%dT%H:%M:%S%z")
+                lastUpdateTs = int(dt_p.timestamp() * 1000)
                 
-                # timestamps
-                if r_data['pushedAt']:
-                    dt_p = datetime.strptime(r_data['pushedAt'].replace('Z', '+0000'), "%Y-%m-%dT%H:%M:%S%z")
-                    lastUpdateTs = int(dt_p.timestamp() * 1000)
-                    
-                    diff = now.timestamp() - dt_p.timestamp()
-                    monthsSinceUpdate = int(diff / (60 * 60 * 24 * 30.44))
-                    
-                if r_data['createdAt']:
-                    dt_c = datetime.strptime(r_data['createdAt'].replace('Z', '+0000'), "%Y-%m-%dT%H:%M:%S%z")
-                    createdAtTs = int(dt_c.timestamp() * 1000)
-                    
-                    diff_stats = now.timestamp() - dt_c.timestamp()
-                    months_age = max(1, diff_stats / (60 * 60 * 24 * 30.44))
-                    spm = stars / months_age
+                diff = now.timestamp() - dt_p.timestamp()
+                monthsSinceUpdate = min(18, int(diff / (60 * 60 * 24 * 30.44)))  # Cap at 18
+                
+            if r_data['createdAt']:
+                dt_c = datetime.strptime(r_data['createdAt'].replace('Z', '+0000'), "%Y-%m-%dT%H:%M:%S%z")
+                createdAtTs = int(dt_c.timestamp() * 1000)
+                
+                diff_stats = now.timestamp() - dt_c.timestamp()
+                months_age = max(1, diff_stats / (60 * 60 * 24 * 30.44))
+                spm = stars / months_age
 
         clean_node['stars'] = stars
         clean_node['spm'] = spm
@@ -223,35 +280,11 @@ def main():
         # Search string for UI - pre-calculate
         clean_node['searchStr'] = (f"{clean_node['title']} {clean_node['author']} {clean_node['description']}").lower()
         
-        # Pre-render HTML row for instant DOM updates
-        def escape_html(text):
-            if not text:
-                return ''
-            return (text
-                .replace('&', '&amp;')
-                .replace('<', '&lt;')
-                .replace('>', '&gt;')
-                .replace('"', '&quot;')
-                .replace("'", '&#039;'))
-        
-        def format_date(ts):
-            if not ts or ts == 0:
-                return '-'
-            from datetime import datetime
-            date = datetime.fromtimestamp(ts / 1000)
-            diff_days = (now - date).days
-            if diff_days <= 1:
-                return 'Today'
-            if diff_days <= 7:
-                return f'{diff_days} days ago'
-            if diff_days <= 30:
-                return f'{diff_days // 7} weeks ago'
-            if diff_days <= 365:
-                return f'{diff_days // 30} months ago'
-            return date.strftime('%b %d, %Y')
-        
+        # Pre-render HTML row
         stars_display = f'{stars:,}' if stars > 0 else '-'
         spm_display = str(round(spm)) if spm > 0 else '-'
+        dpm = clean_node['dpm']
+        dpm_display = f'{int(dpm):,}' if dpm > 0 else '-'
         created_display = format_date(createdAtTs)
         updated_display = format_date(lastUpdateTs)
         
@@ -262,8 +295,7 @@ def main():
         
         essential_tag = ' <b style="color:#38bdf8">★</b>' if clean_node['id'] == 'manager' else ''
         
-        # Minimal HTML - title, author, and description combined in one cell
-        clean_node['html'] = f'''<tr><td><a href="{ref}" target="_blank"><b>{title_escaped}</b></a>{essential_tag} <small class="author-text">by {author_escaped}</small><br><small>{desc_escaped}</small></td><td class="stars">{stars_display}</td><td class="spm">{spm_display}</td><td>{created_display}</td><td>{updated_display}</td></tr>'''
+        clean_node['html'] = f'''<tr><td><a href="{ref}" target="_blank"><b>{title_escaped}</b></a>{essential_tag} <small class="author-text">by {author_escaped}</small><br><small>{desc_escaped}</small></td><td class="stars">{stars_display}</td><td class="spm">{spm_display}</td><td class="dpm">{dpm_display}</td><td>{created_display}</td><td>{updated_display}</td></tr>'''
         
         final_nodes.append(clean_node)
 
@@ -283,7 +315,7 @@ def main():
         'spm_desc': sorted(indices, key=lambda i: final_nodes[i]['spm'], reverse=True),
         # SPM: ascending
         'spm_asc': sorted(indices, key=lambda i: final_nodes[i]['spm']),
-        # Months since update: ascending (most recently updated first = lower months)
+        # Updated: by timestamp
         'updated_desc': sorted(indices, key=lambda i: final_nodes[i]['lastUpdateTs'], reverse=True),
         'updated_asc': sorted(indices, key=lambda i: final_nodes[i]['lastUpdateTs']),
         # Created: by timestamp
@@ -292,12 +324,19 @@ def main():
         # Name: alphabetical
         'name_asc': sorted(indices, key=lambda i: final_nodes[i]['title'].lower()),
         'name_desc': sorted(indices, key=lambda i: final_nodes[i]['title'].lower(), reverse=True),
+        # Downloads: by count
+        'downloads_desc': sorted(indices, key=lambda i: final_nodes[i]['downloads'], reverse=True),
+        'downloads_asc': sorted(indices, key=lambda i: final_nodes[i]['downloads']),
+        # DPM: downloads per month
+        'dpm_desc': sorted(indices, key=lambda i: final_nodes[i]['dpm'], reverse=True),
+        'dpm_asc': sorted(indices, key=lambda i: final_nodes[i]['dpm']),
     }
     
     # Bundle everything
     output_data = {
         'nodes': final_nodes,
-        'sortedIndices': sorted_indices
+        'sortedIndices': sorted_indices,
+        'generatedAt': now.strftime('%Y-%m-%d')
     }
     
     # Saving

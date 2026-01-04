@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ComfyUI Custom Node Explorer</title>
+    <title>ComfyUI New Node Finder</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -106,13 +106,12 @@
                 font-size: 0.8rem;
             }
 
-            .stats-bar {
-                gap: 0.5rem;
-            }
-
-            .stat-item {
-                padding: 0.5rem 0.75rem;
-                font-size: 0.8rem;
+            .stats-inline {
+                border-left: none;
+                padding-left: 0;
+                width: 100%;
+                justify-content: center;
+                padding-top: 0.5rem;
             }
 
             /* Hide header row on mobile */
@@ -155,27 +154,41 @@
             }
 
             tbody tr td.spm::before {
-                content: '★/Month: ';
+                content: '★/mo: ';
+                color: var(--text-secondary);
+                font-size: 0.65rem;
+            }
+
+            tbody tr td.dpm::before {
+                content: '↓/mo: ';
                 color: var(--text-secondary);
                 font-size: 0.65rem;
             }
 
             /* Date columns styling */
-            tbody tr td:nth-child(4)::before {
+            tbody tr td:nth-child(5)::before {
                 content: 'Created: ';
                 color: var(--text-secondary);
                 font-size: 0.65rem;
             }
 
-            tbody tr td:nth-child(5)::before {
+            tbody tr td:nth-child(6)::before {
                 content: 'Updated: ';
                 color: var(--text-secondary);
                 font-size: 0.65rem;
             }
+
+            /* Larger, more readable description on mobile */
+            td small {
+                font-size: 0.9rem;
+                color: #cbd5e1;
+                display: block;
+                margin-top: 0.25rem;
+            }
         }
 
         header {
-            margin-bottom: 3rem;
+            margin-bottom: 1.5rem;
             text-align: center;
             animation: fadeInDown 0.8s ease;
         }
@@ -187,32 +200,40 @@
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             letter-spacing: -1px;
         }
 
-        .stats-bar {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .stat-item {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            padding: 0.75rem 1.5rem;
-            border-radius: 999px;
-            font-size: 0.9rem;
+        .subtitle {
             color: var(--text-secondary);
-            backdrop-filter: var(--glass-blur);
+            font-size: 1rem;
+            font-weight: 400;
+            margin: 0;
         }
 
-        .stat-value {
+        .subtitle .highlight {
             color: var(--accent-color);
             font-weight: 600;
-            margin-left: 0.5rem;
+        }
+
+        .stats-inline {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-left: 1rem;
+            border-left: 1px solid var(--card-border);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            min-width: 125px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .stats-inline .stat-value {
+            color: var(--accent-color);
+            font-weight: 600;
+            font-size: 1.1rem;
+            font-variant-numeric: tabular-nums;
         }
 
         .controls {
@@ -229,9 +250,9 @@
         }
 
         .search-wrapper {
-            flex: 1;
             position: relative;
-            min-width: 300px;
+            width: 250px;
+            min-width: 200px;
         }
 
         .search-icon {
@@ -263,7 +284,7 @@
         .filter-container {
             display: flex;
             align-items: center;
-            gap: 1.5rem;
+            gap: 1.25rem;
             padding-left: 1rem;
             border-left: 1px solid var(--card-border);
         }
@@ -271,26 +292,31 @@
         .range-group {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
-            min-width: 180px;
-            padding: 0.75rem 1rem;
-            background: rgba(15, 23, 42, 0.4);
-            border-radius: 0.5rem;
-            border: 1px solid var(--card-border);
+            gap: 0.75rem;
+            min-width: 200px;
+            padding: 0.5rem 1.25rem 0.5rem 0;
+            border-right: 1px solid var(--card-border);
+        }
+
+        .range-group:last-child {
+            border-right: none;
+            padding-right: 0;
         }
 
         .range-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--text-secondary);
+            letter-spacing: 0.02em;
         }
 
         .range-val {
             color: var(--accent-color);
             font-family: monospace;
             font-weight: 600;
+            font-size: 0.8rem;
         }
 
         input[type="range"] {
@@ -328,14 +354,16 @@
         }
 
         th {
-            text-align: left;
-            padding: 1rem;
+            text-align: center;
+            padding: 0.5rem 0.5rem;
             color: var(--text-secondary);
             font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
             user-select: none;
-            white-space: nowrap;
+            vertical-align: top;
+            min-height: 4.5rem;
+            height: 4.5rem;
         }
 
         th:hover {
@@ -344,13 +372,19 @@
         }
 
         th.sorted-asc::after {
-            content: ' ▲';
+            content: '▲';
             color: var(--accent-color);
+            display: block;
+            font-size: 0.7rem;
+            margin-top: 2px;
         }
 
         th.sorted-desc::after {
-            content: ' ▼';
+            content: '▼';
             color: var(--accent-color);
+            display: block;
+            font-size: 0.7rem;
+            margin-top: 2px;
         }
 
         tbody tr {
@@ -376,6 +410,7 @@
         /* Specific column styles - Widths apply to Header */
         th.col-name {
             width: auto;
+            text-align: left;
         }
 
         th.col-stars {
@@ -384,7 +419,12 @@
         }
 
         th.col-spm {
-            width: 80px;
+            width: 70px;
+            text-align: center;
+        }
+
+        th.col-dpm {
+            width: 90px;
             text-align: center;
         }
 
@@ -410,7 +450,9 @@
         }
 
         td small {
-            opacity: 0.7;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
         }
 
         td.stars {
@@ -422,6 +464,12 @@
 
         td.spm {
             color: var(--accent-color);
+            font-family: monospace;
+            text-align: center;
+        }
+
+        td.dpm {
+            color: #10b981;
             font-family: monospace;
             text-align: center;
         }
@@ -509,11 +557,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>ComfyUI Custom Node Explorer</h1>
-            <div class="stats-bar" id="stats-bar">
-                <div class="stat-item">Total Nodes: <span class="stat-value" id="count-total">...</span></div>
-                <div class="stat-item">Nodes Visible: <span class="stat-value" id="count-nodes">...</span></div>
-            </div>
+            <h1>ComfyUI New Node Finder</h1>
+            <p class="subtitle" id="header-subtitle">Loading...</p>
         </header>
 
         <div class="controls">
@@ -525,25 +570,36 @@
             <div class="filter-container">
                 <div class="range-group">
                     <div class="range-row">
-                        <span>Min Stars</span>
+                        <span>Stars</span>
                         <span id="min-stars-val" class="range-val">0</span>
                     </div>
-                    <input type="range" id="min-stars-input" min="0" max="1000" value="0">
+                    <input type="range" id="min-stars-input" min="0" max="3000" value="0">
                 </div>
                 <div class="range-group">
                     <div class="range-row">
-                        <span>Min Stars/Month</span>
+                        <span>Star Velocity</span>
                         <span id="min-spm-val" class="range-val">50</span>
                     </div>
-                    <input type="range" id="min-spm-input" min="0" max="100" step="1" value="50">
+                    <input type="range" id="min-spm-input" min="0" max="300" step="1" value="50">
                 </div>
                 <div class="range-group">
                     <div class="range-row">
-                        <span>Max Months Since Update</span>
-                        <span id="max-months-val" class="range-val">12</span>
+                        <span>Download Velocity</span>
+                        <span id="min-dpm-val" class="range-val">0</span>
                     </div>
-                    <input type="range" id="max-months-input" min="0" max="120" value="120">
+                    <input type="range" id="min-dpm-input" min="0" max="10000" step="100" value="0">
                 </div>
+                <div class="range-group">
+                    <div class="range-row">
+                        <span>Freshness</span>
+                        <span id="max-months-val" class="range-val">18</span>
+                    </div>
+                    <input type="range" id="max-months-input" min="0" max="18" value="18">
+                </div>
+            </div>
+
+            <div class="stats-inline">
+                <span><span class="stat-value" id="count-nodes">...</span> visible</span>
             </div>
         </div>
 
@@ -553,14 +609,15 @@
                     <tr>
                         <th data-sort="name" class="col-name text-left">Node</th>
                         <th data-sort="stars" class="col-stars">Stars</th>
-                        <th data-sort="spm" class="col-spm">Stars/Mo</th>
+                        <th data-sort="spm" class="col-spm">Star<br>Velocity</th>
+                        <th data-sort="dpm" class="col-dpm">Download<br>Velocity</th>
                         <th data-sort="created" class="col-created">Created</th>
                         <th data-sort="updated" class="col-updated">Updated</th>
                     </tr>
                 </thead>
                 <tbody id="table-body">
                     <tr>
-                        <td colspan="5">
+                        <td colspan="6">
                             <div class="loading">Loading ecosystem...</div>
                         </td>
                     </tr>
@@ -590,21 +647,12 @@
                 }
 
                 // Calculate Max Stars/Month limits for sliders
-                const maxStars = Math.max(...allNodes.map(n => n.stars));
-                const maxSpm = Math.max(...allNodes.map(n => n.spm));
+                // Use fixed caps defined in HTML (Stars: 5000, SPM: 500, DPM: 10000, Freshness: 18)
+                // No dynamic override needed
 
-                // Determine sensible max for months since update (ignoring 999 default)
-                const realUpdates = allNodes.filter(n => n.monthsSinceUpdate !== 999).map(n => n.monthsSinceUpdate);
-                const maxMonths = realUpdates.length ? Math.ceil(Math.max(...realUpdates)) : 24;
-
-                minStarsInput.max = maxStars;
-                minSpmInput.max = Math.ceil(maxSpm);
-
-                maxMonthsInput.max = maxMonths;
-                maxMonthsInput.value = maxMonths; // Default to showing everything
-
-                // Set default SPM filter to 50
+                // Set default filter values
                 minSpmInput.value = 50;
+                minDpmInput.value = 0;
 
                 updateSliderDisplay();
 
@@ -613,14 +661,16 @@
                 document.querySelector('th[data-sort="created"]').classList.add('sorted-desc');
 
                 // Initial render
-                document.getElementById('count-total').textContent = formatNumber(allNodes.length);
+                const generatedAt = window.COMFY_DATA.generatedAt || 'Unknown';
+                document.getElementById('header-subtitle').innerHTML =
+                    `<span class="highlight">${formatNumber(allNodes.length)}</span> nodes indexed • Updated ${generatedAt}`;
                 updateStats(getFilteredNodes());
                 renderTable();
 
             } catch (err) {
                 console.error(err);
                 document.getElementById('table-body').innerHTML = `
-                    <tr><td colspan="5" class="loading" style="color: var(--danger-color)">
+                    <tr><td colspan="6" class="loading" style="color: var(--danger-color)">
                         Failed to load data.<br>${err.message}
                     </td></tr>
                 `;
@@ -632,6 +682,8 @@
         const minStarsVal = document.getElementById('min-stars-val');
         const minSpmInput = document.getElementById('min-spm-input');
         const minSpmVal = document.getElementById('min-spm-val');
+        const minDpmInput = document.getElementById('min-dpm-input');
+        const minDpmVal = document.getElementById('min-dpm-val');
         const maxMonthsInput = document.getElementById('max-months-input');
         const maxMonthsVal = document.getElementById('max-months-val');
 
@@ -670,6 +722,12 @@
             debouncedRender();
         });
 
+        minDpmInput.addEventListener('input', () => {
+            updateSliderDisplay();
+            updateStats(getFilteredNodes());
+            debouncedRender();
+        });
+
         maxMonthsInput.addEventListener('input', () => {
             updateSliderDisplay();
             updateStats(getFilteredNodes());
@@ -679,6 +737,7 @@
         function updateSliderDisplay() {
             minStarsVal.textContent = formatNumber(minStarsInput.value);
             minSpmVal.textContent = minSpmInput.value;
+            minDpmVal.textContent = formatNumber(minDpmInput.value);
             maxMonthsVal.textContent = maxMonthsInput.value + " mo";
         }
 
@@ -708,6 +767,7 @@
             const query = searchInput.value.toLowerCase();
             const minS = parseInt(minStarsInput.value);
             const minSpm = parseFloat(minSpmInput.value);
+            const minDpm = parseFloat(minDpmInput.value);
             const maxMo = parseInt(maxMonthsInput.value);
             const maxMoLimit = parseInt(maxMonthsInput.max);
 
@@ -715,6 +775,7 @@
                 const matchesSearch = node.searchStr.includes(query);
                 const matchesStars = node.stars >= minS;
                 const matchesSpm = node.spm >= minSpm;
+                const matchesDpm = node.dpm >= minDpm;
 
                 // Logic: If slider is at max, include everything (even unknown dates). 
                 // Otherwise strict check.
@@ -725,7 +786,7 @@
                     matchesRecency = node.monthsSinceUpdate <= maxMo;
                 }
 
-                return matchesSearch && matchesStars && matchesSpm && matchesRecency;
+                return matchesSearch && matchesStars && matchesSpm && matchesDpm && matchesRecency;
             });
         }
 
@@ -738,6 +799,7 @@
             const query = searchInput.value.toLowerCase();
             const minS = parseInt(minStarsInput.value);
             const minSpm = parseFloat(minSpmInput.value);
+            const minDpm = parseFloat(minDpmInput.value);
             const maxMo = parseInt(maxMonthsInput.value);
             const maxMoLimit = parseInt(maxMonthsInput.max);
 
@@ -752,6 +814,7 @@
                 if (!node.searchStr.includes(query)) continue;
                 if (node.stars < minS) continue;
                 if (node.spm < minSpm) continue;
+                if (node.dpm < minDpm) continue;
                 if (maxMo < maxMoLimit && node.monthsSinceUpdate > maxMo) continue;
 
                 // Use pre-rendered HTML
@@ -762,7 +825,7 @@
             tableBody.style.display = 'none';
 
             if (htmlParts.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--text-secondary)">No nodes found.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color: var(--text-secondary)">No nodes found.</td></tr>';
             } else {
                 tableBody.innerHTML = htmlParts.join('');
             }
