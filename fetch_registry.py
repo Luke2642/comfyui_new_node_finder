@@ -123,9 +123,11 @@ def format_date(ts):
     if diff_days <= 7:
         return f'{diff_days} days ago'
     if diff_days <= 30:
-        return f'{diff_days // 7} weeks ago'
+        weeks = diff_days // 7
+        return f'{weeks} week{"s" if weeks != 1 else ""} ago'
     if diff_days <= 365:
-        return f'{diff_days // 30} months ago'
+        months = diff_days // 30
+        return f'{months} month{"s" if months != 1 else ""} ago'
     return date.strftime('%b %d, %Y')
 
 
