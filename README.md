@@ -4,6 +4,10 @@ A modern, responsive web application for browsing and discovering [ComfyUI](http
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
+## 🖥️ Live Demo
+[Check it out here](https://luke2642.github.io/comfyui_new_node_finder/)
+Simply open the link in your browser to explore the node ecosystem.
+
 ---
 
 ## ✅ Working Features
@@ -47,10 +51,6 @@ The `generate_summaries.py` script is designed to:
 **Current status**: ~153 repos have old-format summaries (plain text). The new format with categories is implemented but requires re-processing.
 
 ---
-
-## 🖥️ Live Demo
-[Check it out here](https://luke2642.github.io/comfyui_new_node_finder/)
-Simply open the link in your browser to explore the node ecosystem.
 
 ## 🚀 Getting Started
 
