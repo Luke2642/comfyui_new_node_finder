@@ -632,8 +632,6 @@
 
         let allNodes = [];
         let sortedIndices = {};
-        // True when no node carries a star count, which means the GitHub
-        // star fetch failed in the last data update.
         let starDataMissing = false;
 
         // State - default sort by created date (newest first)
@@ -653,10 +651,8 @@
                 // Use fixed caps defined in HTML (Stars: 5000, SPM: 500, DPM: 10000, Freshness: 18)
                 // No dynamic override needed
 
-                // Check the data health before the filters apply.
-                // The Star Velocity default of 50 hides every node when the
-                // GitHub star fetch fails and writes zeros, so the default
-                // drops to 0 while the star data is absent.
+                // A failed star fetch writes zeros, and the Star Velocity
+                // default of 50 would then hide every node.
                 starDataMissing = !allNodes.some(n => n.stars > 0);
 
                 // Set default filter values
@@ -672,7 +668,7 @@
                 // Initial render
                 const generatedAt = window.COMFY_DATA.generatedAt || 'Unknown';
                 const starWarning = starDataMissing
-                    ? ` • <span style="color: var(--danger-color)">Star data unavailable: the GitHub star fetch failed, so Stars and Star Velocity read 0</span>`
+                    ? ` • <span style="color: var(--danger-color)">Star data unavailable</span>`
                     : '';
                 document.getElementById('header-subtitle').innerHTML =
                     `<span class="highlight">${formatNumber(allNodes.length)}</span> nodes indexed • Updated ${generatedAt}${starWarning}`;
