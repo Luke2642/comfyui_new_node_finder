@@ -178,8 +178,11 @@ def main():
             batch_map[b_idx] = full_name
             
         result = fetch_details_graphql(query_input, GITHUB_TOKEN)
-        
-        if result and 'data' in result:
+
+        if result and 'errors' in result:
+            print(f"GraphQL returned {len(result['errors'])} error(s), e.g.: {result['errors'][0].get('message')}")
+
+        if result and 'data' in result and result['data']:
             data = result['data']
             for b_idx, full_name in batch_map.items():
                 alias = f"r{b_idx}"
@@ -194,10 +197,18 @@ def main():
                     repo_data_map[full_name] = None
         else:
             print("Batch failed or returned no data.")
-            if result and 'errors' in result:
-                 print("Errors:", result['errors'][0]['message'])
             time.sleep(1)
 
+    # Guard: if the GitHub API returned no usable data for any repo, the token
+    # or the API is broken (expired/revoked GH_PAT, auth failure, outage).
+    # Stop here instead of overwriting nodes.json with all-zero star data.
+    fetched_count = sum(1 for v in repo_data_map.values() if v)
+    print(f"Fetched fresh GitHub data for {fetched_count}/{total_repos} repositories.")
+    if total_repos > 0 and fetched_count == 0:
+        print("ERROR: GitHub GraphQL API returned no data for any repository.")
+        print("Check that GH_PAT is valid, unexpired, and has read access to public repositories.")
+        print("Aborting without writing nodes.js/nodes.json to avoid erasing existing star data.")
+        exit(1)
 
     # Consolidate Data
     print("Consolidating data...")
@@ -245,13 +256,14 @@ def main():
             'dpm': node.get('dpm', 0),  # Preserve from Registry
         }
         
-        # Get fresh GitHub data
-        stars = 0
-        spm = 0
-        lastUpdateTs = 0
-        createdAtTs = 0
-        monthsSinceUpdate = 18  # Default to max cap
-        
+        # Get fresh GitHub data. Fall back to the previously stored values
+        # when this repo's fetch failed, instead of zeroing out known data.
+        stars = node.get('stars', 0)
+        spm = node.get('spm', 0)
+        lastUpdateTs = node.get('lastUpdateTs', 0)
+        createdAtTs = node.get('createdAtTs', 0)
+        monthsSinceUpdate = node.get('monthsSinceUpdate', 18)
+
         r_data = repo_data_map.get(repo_key)
         
         if r_data:
