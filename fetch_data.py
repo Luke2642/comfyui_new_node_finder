@@ -76,7 +76,19 @@ def fetch_details_graphql(repo_tuples, token):
         print(f"Error: {e}")
         return None
 
+def probe_token():
+    """Fail early if the token cannot read a public repo (a fine-grained PAT
+    without public_repo access returns NOT_FOUND for all 8000, not a 401)."""
+    r = fetch_details_graphql([(0, 'ltdrdata', 'ComfyUI-Manager')], GITHUB_TOKEN)
+    if r and r.get('data') and r['data'].get('r0'):
+        return
+    errs = (r or {}).get('errors') or [{}]
+    print(f"ERROR: token cannot read public repos: {errs[0].get('message')}")
+    print("Use a classic PAT with the public_repo scope.")
+    exit(1)
+
 def main():
+    probe_token()
     # Load existing nodes.json if it exists (preserves Registry-added nodes)
     existing_nodes = []
     existing_repos = set()

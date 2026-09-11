@@ -632,6 +632,7 @@
 
         let allNodes = [];
         let sortedIndices = {};
+        let starDataMissing = false;
 
         // State - default sort by created date (newest first)
         let currentSort = { field: 'created', direction: 'desc' };
@@ -650,8 +651,12 @@
                 // Use fixed caps defined in HTML (Stars: 5000, SPM: 500, DPM: 10000, Freshness: 18)
                 // No dynamic override needed
 
+                // A failed star fetch writes zeros, and the Star Velocity
+                // default of 50 would then hide every node.
+                starDataMissing = !allNodes.some(n => n.stars > 0);
+
                 // Set default filter values
-                minSpmInput.value = 50;
+                minSpmInput.value = starDataMissing ? 0 : 50;
                 minDpmInput.value = 0;
 
                 updateSliderDisplay();
@@ -662,8 +667,11 @@
 
                 // Initial render
                 const generatedAt = window.COMFY_DATA.generatedAt || 'Unknown';
+                const starWarning = starDataMissing
+                    ? ` • <span style="color: var(--danger-color)">Star data unavailable</span>`
+                    : '';
                 document.getElementById('header-subtitle').innerHTML =
-                    `<span class="highlight">${formatNumber(allNodes.length)}</span> nodes indexed • Updated ${generatedAt}`;
+                    `<span class="highlight">${formatNumber(allNodes.length)}</span> nodes indexed • Updated ${generatedAt}${starWarning}`;
                 updateStats(getFilteredNodes());
                 renderTable();
 
@@ -825,7 +833,7 @@
             tableBody.style.display = 'none';
 
             if (htmlParts.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color: var(--text-secondary)">No nodes found.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem; color: var(--text-secondary)">No nodes match the current filters. Lower the sliders to see more nodes.</td></tr>';
             } else {
                 tableBody.innerHTML = htmlParts.join('');
             }
