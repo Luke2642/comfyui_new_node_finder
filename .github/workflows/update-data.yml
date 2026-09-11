@@ -26,7 +26,7 @@ jobs:
 
       - name: Fetch data
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT_STARS }}
         run: python fetch_data.py
       
       - name: Commit changes
