@@ -113,8 +113,9 @@ def main():
     token = select_token()
     if not token:
         print("ERROR: no GitHub token reads public repositories.")
-        print("A fine-grained PAT must include Public Repositories read access.")
-        print("Check that the token is not expired.")
+        print("A fine-grained PAT needs Repository access = Public Repositories.")
+        print("A classic PAT needs the public_repo scope.")
+        print("Check also that the token is not expired.")
         print("Aborting without writing nodes.js/nodes.json.")
         exit(1)
 
@@ -248,7 +249,7 @@ def main():
     if total_repos > 0 and fetched_count == 0:
         print("ERROR: GitHub GraphQL API returned no data for any repository.")
         print("Check that the token is valid and unexpired.")
-        print("A fine-grained PAT must include Public Repositories read access.")
+        print("A fine-grained PAT needs Repository access = Public Repositories.")
         print("Aborting without writing nodes.js/nodes.json to avoid erasing existing star data.")
         exit(1)
 

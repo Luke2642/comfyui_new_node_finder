@@ -26,15 +26,17 @@ jobs:
 
       - name: Fetch data
         env:
-          # GH_PAT_STARS is the dedicated star-read token. GH_PAT is the
-          # fallback, because this job already uses it for checkout and push.
-          # The built-in GITHUB_TOKEN is not a valid fallback: GraphQL answers
-          # "Resource not accessible by integration" for any repository outside
-          # this one. The script probes each token and uses the first that
-          # reads a public repository, so it never uses GH_PAT when
-          # GH_PAT_STARS works.
+          # The star read needs a token with public repository read access.
+          # A fine-grained PAT needs Repository access set to "Public
+          # Repositories". A classic PAT needs the public_repo scope.
+          # The built-in GITHUB_TOKEN does not work here: GraphQL answers
+          # "Resource not accessible by integration" for every repository
+          # outside this one.
+          # GH_PAT_STARS is the primary token. GH_PAT_STARS_FALLBACK is
+          # optional. The script probes both and uses the first that reads a
+          # known public repository.
           GITHUB_TOKEN: ${{ secrets.GH_PAT_STARS }}
-          GITHUB_TOKEN_FALLBACK: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN_FALLBACK: ${{ secrets.GH_PAT_STARS_FALLBACK }}
         run: python fetch_data.py
       
       - name: Commit changes
