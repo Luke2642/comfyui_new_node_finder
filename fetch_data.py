@@ -13,12 +13,25 @@ DATA_FILE = "custom-node-list.json"
 OUTPUT_JS_FILE = "nodes.js"
 OUTPUT_JSON_FILE = "nodes.json"
 
-# Token from environment variable (required for GraphQL API)
-GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
-if not GITHUB_TOKEN:
+# Tokens from environment variables (required for the GraphQL API).
+# GITHUB_TOKEN is the primary token. GITHUB_TOKEN_FALLBACK is optional.
+# A fine-grained Personal Access Token without public repository read access
+# does not fail with 401. It returns NOT_FOUND for every repository, which
+# looks like 8000 missing repositories. The script probes each token before
+# the main fetch and it uses the first token that reads a known public
+# repository.
+TOKEN_CANDIDATES = [
+    ('GITHUB_TOKEN', os.environ.get('GITHUB_TOKEN')),
+    ('GITHUB_TOKEN_FALLBACK', os.environ.get('GITHUB_TOKEN_FALLBACK')),
+]
+TOKEN_CANDIDATES = [(n, v) for n, v in TOKEN_CANDIDATES if v]
+if not TOKEN_CANDIDATES:
     print("ERROR: GITHUB_TOKEN environment variable is required.")
     print("Set it with: export GITHUB_TOKEN=your_token_here")
     exit(1)
+
+# A public repository that the probe reads to test a token.
+PROBE_REPO = ('ltdrdata', 'ComfyUI-Manager')
 
 # GraphQL Query Template
 # We will construct a query that fetches multiple repos at once using aliases
@@ -76,7 +89,35 @@ def fetch_details_graphql(repo_tuples, token):
         print(f"Error: {e}")
         return None
 
+def select_token():
+    """Return the first token that reads a known public repository.
+
+    Returns None when no candidate token works.
+    """
+    for name, token in TOKEN_CANDIDATES:
+        owner, repo = PROBE_REPO
+        result = fetch_details_graphql([(0, owner, repo)], token)
+        if result and result.get('data') and result['data'].get('r0'):
+            print(f"Token check: {name} reads public repositories.")
+            return token
+        reason = 'no response'
+        if result and result.get('errors'):
+            reason = result['errors'][0].get('message', 'unknown error')
+        print(f"Token check: {name} cannot read {owner}/{repo} ({reason}).")
+    return None
+
+
 def main():
+    # Select a working token before any other work. An unusable token makes
+    # every repository look missing and it zeroes the star data.
+    token = select_token()
+    if not token:
+        print("ERROR: no GitHub token reads public repositories.")
+        print("A fine-grained PAT must include Public Repositories read access.")
+        print("Check that the token is not expired.")
+        print("Aborting without writing nodes.js/nodes.json.")
+        exit(1)
+
     # Load existing nodes.json if it exists (preserves Registry-added nodes)
     existing_nodes = []
     existing_repos = set()
@@ -177,7 +218,7 @@ def main():
             query_input.append((b_idx, owner, name))
             batch_map[b_idx] = full_name
             
-        result = fetch_details_graphql(query_input, GITHUB_TOKEN)
+        result = fetch_details_graphql(query_input, token)
 
         if result and 'errors' in result:
             print(f"GraphQL returned {len(result['errors'])} error(s), e.g.: {result['errors'][0].get('message')}")
@@ -206,7 +247,8 @@ def main():
     print(f"Fetched fresh GitHub data for {fetched_count}/{total_repos} repositories.")
     if total_repos > 0 and fetched_count == 0:
         print("ERROR: GitHub GraphQL API returned no data for any repository.")
-        print("Check that GH_PAT is valid, unexpired, and has read access to public repositories.")
+        print("Check that the token is valid and unexpired.")
+        print("A fine-grained PAT must include Public Repositories read access.")
         print("Aborting without writing nodes.js/nodes.json to avoid erasing existing star data.")
         exit(1)
 

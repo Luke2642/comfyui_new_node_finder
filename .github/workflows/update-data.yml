@@ -26,7 +26,10 @@ jobs:
 
       - name: Fetch data
         env:
+          # GH_PAT_STARS is optional. The built-in GITHUB_TOKEN reads public
+          # repositories and needs no manual rotation, so it is the fallback.
           GITHUB_TOKEN: ${{ secrets.GH_PAT_STARS }}
+          GITHUB_TOKEN_FALLBACK: ${{ secrets.GITHUB_TOKEN }}
         run: python fetch_data.py
       
       - name: Commit changes
